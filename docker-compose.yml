@@ -6,19 +6,13 @@ volumes:
 
 services:
   prometheus:
-    image: quay.io/prometheus/prometheus:latest
+    image: prom/prometheus:latest
     container_name: prometheus
     volumes:
-      - ./prometheus:/etc/prometheus:ro
-      - prometheus_data:/prometheus:ro
-    command:
-      - '-config.file=/etc/prometheus/prometheus.yml'
-      - '-storage.local.path=/prometheus'
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
     ports:
       - 9090:9090
-    links:
-      - mysqld-exporter
-      - node
 
   grafana:
     image: grafana/grafana:latest
@@ -27,10 +21,6 @@ services:
       - grafana_data:/var/lib/grafana
     ports:
       - 3000:3000
-    links:
-      - prometheus
-    depends_on:
-      - prometheus
 
   mysqld:
     image: mysql:5.7
@@ -44,26 +34,21 @@ services:
       - 3306:3306
 
   mysqld-exporter:
-    image: quay.io/prometheus/mysqld-exporter
-    command:
-     - -collect.info_schema.tablestats
+    image: prom/mysqld-exporter:latest
     container_name: mysqld-exporter
     environment:
       - DATA_SOURCE_NAME=exporter:exporter@(mysqld:3306)/
     ports:
       - 9104:9104
-    links:
-      - mysqld
-    depends_on:
-      - mysqld
 
   node:
-    image: quay.io/prometheus/node-exporter
+    image: prom/node-exporter:latest
     container_name: node-exporter
-    ports:
-      - 9100:9100
+    command:
+      - '--path.rootfs=/host'
+    pid: host
     volumes:
-      - /:/rootfs:ro
+      - '/:/host:ro,rslave'
 
 networks:
   default:
